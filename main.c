@@ -11,6 +11,7 @@ typedef struct TNode {
 } TNode;
 
 int maxchild = 5;
+bool is_genesis = true;
 TNode* genesis_node;
 
 struct TStackHead{
@@ -24,56 +25,67 @@ struct TStackHead{
 typedef struct TStackHead TStackHead;
 typedef struct TStackList TStackList;
 
-TNode* find_vertex(TNode* u, int vertex) {
+TNode* FindNode(TNode* u, int vertex) {
     if (u->value == vertex)
         return u;
     TNode* vertex_address = NULL;
     for (int i = 0; i < u->CountChild; ++i) {
-        vertex_address = find_vertex(u->children[i], vertex);
+        vertex_address = FindNode(u->children[i], vertex);
         if (vertex_address != NULL && vertex_address->value == vertex)
             break;
     }
     return vertex_address;
 }
 
-void delete_node(TNode* v) {
+void DelNode(TNode* v) {
+    int count = 0;
     for (int i = v->CountChild - 1; i >= 0; --i) {
-        delete_node(v->children[i]);
+        DelNode(v->children[i]);
     }
-        TNode* v_parent = v->parent;
-        int del_index = 0;
-        for (int i = 0; i < v_parent->CountChild; ++i) {
-            if (v_parent->children[i]->value == v->value) {
-                del_index = i;
-                free(v);
-                break;
-            }
+
+    TNode* v_parent = v->parent;
+    if (v->parent != NULL)
+        count = v_parent->CountChild;
+    int del_index = 0;
+    for (int i = 0; i < count; ++i) {
+        if (v_parent->children[i]->value == v->value) {
+            del_index = i;
+            free(v);
+            break;
         }
-        for (int i = del_index + 1; i < v_parent->CountChild; ++i) {
-            v_parent->children[i - 1] = v_parent->children[i];
-        }
+    }
+    for (int i = del_index + 1; i < count; ++i) {
+        v_parent->children[i - 1] = v_parent->children[i];
+    }
+    if (v->parent != NULL)
         v_parent->CountChild--;
+    else
+    {
+        free(v);
+        genesis_node = NULL;
+        is_genesis = true;
+    }
 }
 
-void print_tree(TNode* u, int space_cnt, int deep) {
+void TPrint(TNode* u, int space_cnt, int deep) {
     printf("%d\n", u->value);
     for (int i = 0; i < u->CountChild; ++i) {
         for (int j = 0; j < space_cnt; ++j) {
-            if (deep != 0 && j % (maxchild * deep) == 0)
+            if (j == 0 || j % 5 == 0)
                 printf("|");
             else
                 printf(" ");
         }
         printf("|\n");
         for (int j = 0; j < space_cnt; ++j) {
-            if (deep != 0 && j % (maxchild * deep) == 0)
+            if (j == 0)
                 printf("|");
             else
                 printf(" ");
         }
         printf("+");
         printf("----");
-        print_tree(u->children[i], space_cnt + 5, deep++);
+        TPrint(u->children[i], space_cnt + 5, deep++);
     }
 }
 
@@ -90,6 +102,23 @@ void create_node(TNode* u, int v) {
     }
     u->children[u->CountChild] = nd;
     u->CountChild++;
+}
+
+int RInput(char *str) {
+    char *str1 = str;
+    bool f = 1;
+    while (*str) {
+        if (*str < '0' || *str >'9')
+            f = 0;
+        str++;
+    }
+    if (f)
+        return atoi(str1);
+    else {
+        printf("Wrong input, try again\n");
+        printf("Enter values/option: ");
+        return -1;
+    }
 }
 
 TNode *create_genesis_node(int v) {
@@ -122,11 +151,11 @@ int PushStack(TStackHead *HeadS, TNode *Node, int depth) {
 }
 
 TStackList* PopStack(TStackHead *HeadS) {
-    if (!HeadS || !HeadS->Head) { //проверка ошибок(если голова пустая или нет первого элемента)
-        return NULL;//ошибка
+    if (!HeadS || !HeadS->Head) {
+        return NULL;
     }
-    TStackList* Temp = HeadS->Head;//временный элемент, чтобы достать из стека
-    HeadS->Head = HeadS->Head->Next;//голова указывает на второй(первого больше нет в стеке)
+    TStackList* Temp = HeadS->Head;//временный элемент, достаем стека первый
+    HeadS->Head = HeadS->Head->Next;//второй становится первым
     return Temp;
 }
 
@@ -156,21 +185,41 @@ int Detour(TNode* Tree) {
 }
 
 int main(void) {
-    bool is_genesis = true;
     int op;
-    int newval;
-    int ans;
     int u, v;
+    char op1[] = "";
+    char u1[] = "";
+    char v1[] = "";
     printf("1 - Create new rib\n");
     printf("2 - Delete a rib\n");
     printf("3 - Print the tree\n");
     printf("4 - Check the depth\n");
     printf("5 - End a program\n");
+    printf("At first, enter the value of the genesis node (one parameter),\nthen add new ribs by entering the value of the existing node, then enter a value of the new node (two parameters).\n");
     while (true) {
-        scanf("%d", &op);
+        printf("Enter option: ");
+        do {
+            scanf("%s", op1);
+            op = RInput(op1);
+        } while (op == -1);
         switch (op) {
             case 1:
-                scanf("%d %d", &u, &v);
+                if (is_genesis) {
+                    printf("Enter the value of genesis: ");
+                    do {
+                        scanf("%s", u1);
+                        u = RInput(u1);
+                    } while (u == -1);
+                }
+                else {
+                    printf("Enter values: ");
+                    do {
+                        scanf("%s", u1);
+                        u = RInput(u1);
+                        scanf("%s", v1);
+                        v = RInput(v1);
+                    } while (u == -1 || v == -1);
+                }
                 if (u < 0 || v < 0) {
                     printf("Incorrect data\n");
                     continue;
@@ -178,15 +227,13 @@ int main(void) {
                 if (is_genesis) {
                     is_genesis = false;
                     genesis_node = create_genesis_node(u);
-                    create_node(genesis_node, v);
-
                 } else {
-                    TNode *u_address = find_vertex(genesis_node, u);
+                    TNode *u_address = FindNode(genesis_node, u);
                     if (u_address == NULL) {
                         printf("There is no such vertex in the tree\n");
                         continue;
                     }
-                    TNode *v_address = find_vertex(genesis_node, v);
+                    TNode *v_address = FindNode(genesis_node, v);
                     if (v_address == NULL) {
                         create_node(u_address, v);
 
@@ -196,30 +243,22 @@ int main(void) {
                 }
                 break;
             case 2:
+                printf("Deleting node: ");
                 scanf("%d", &u);
-                TNode* vert = find_vertex(genesis_node, u);
-                TNode* par = vert;
+                TNode* vert = FindNode(genesis_node, u);
                 if (vert == NULL)
                     printf("Incorrect data\n");
-                else if (par->parent==NULL) {
-                    printf("Can't delete the genesis. Want to change it?(1/0)\n");
-                    scanf("%d", &ans);
-                    if (ans == 1) {
-                        printf("New value: ");
-                        scanf("%d", &newval);
-                        vert->value = newval;
-                        for (int i=0;i<=vert->CountChild;i++)
-                            delete_node(vert->children[i]);
-                    }
-                }
                 else
-                    delete_node(vert);
+                    DelNode(vert);
                 break;
             case 3:
-                if (genesis_node != NULL)
-                    print_tree(genesis_node, 0, 0);
+                if (genesis_node != NULL) {
+                    printf("\n");
+                    TPrint(genesis_node, 0, 0);
+                    printf("\n");
+                }
                 else
-                    printf("The tree is empty");
+                    printf("The tree is empty\n");
                 break;
             case 4:
                 printf("Depth: %d\n", Detour(genesis_node));
@@ -227,7 +266,7 @@ int main(void) {
             case 5:
                 return 0;
             default:
-                printf("No such option");
+                printf("No such option\n");
         }
     }
 }
