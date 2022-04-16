@@ -11,8 +11,8 @@ typedef struct TNode {
 } TNode;
 
 int maxchild = 5;
-bool is_genesis = true;
-TNode* genesis_node;
+bool is_root = true;
+TNode* root_node;
 
 struct TStackHead{
     struct TStackList{
@@ -62,22 +62,22 @@ void DelNode(TNode* v) {
     else
     {
         free(v);
-        genesis_node = NULL;
-        is_genesis = true;
+        root_node = NULL;
+        is_root = true;
     }
 }
 
-void TPrint(TNode* u, int space_cnt, int deep) {
+void TPrint(TNode* u, int indent, int deep) {
     printf("%d\n", u->value);
     for (int i = 0; i < u->CountChild; ++i) {
-        for (int j = 0; j < space_cnt; ++j) {
+        for (int j = 0; j < indent; ++j) {
             if (j == 0 || j % 5 == 0)
                 printf("|");
             else
                 printf(" ");
         }
         printf("|\n");
-        for (int j = 0; j < space_cnt; ++j) {
+        for (int j = 0; j < indent; ++j) {
             if (j == 0)
                 printf("|");
             else
@@ -85,11 +85,11 @@ void TPrint(TNode* u, int space_cnt, int deep) {
         }
         printf("+");
         printf("----");
-        TPrint(u->children[i], space_cnt + 5, deep++);
+        TPrint(u->children[i], indent + 5, deep++);
     }
 }
 
-void create_node(TNode* u, int v) {
+void CreateNode(TNode* u, int v) {
     TNode *nd = malloc(sizeof(TNode));
     nd->parent = u;
     nd->value = v;
@@ -121,7 +121,7 @@ int RInput(char *str) {
     }
 }
 
-TNode *create_genesis_node(int v) {
+TNode *CreateRoot(int v) {
     TNode *nd = malloc(sizeof(TNode));
     nd->parent = NULL;
     nd->value = v;
@@ -195,7 +195,7 @@ int main(void) {
     printf("3 - Print the tree\n");
     printf("4 - Check the depth\n");
     printf("5 - End a program\n");
-    printf("At first, enter the value of the genesis node (one parameter),\nthen add new ribs by entering the value of the existing node, then enter a value of the new node (two parameters).\n");
+    printf("At first, enter the value of the root node (one parameter),\nthen add new ribs by entering the value of the existing node, then enter a value of the new node (two parameters).\n");
     while (true) {
         printf("Enter option: ");
         do {
@@ -204,8 +204,8 @@ int main(void) {
         } while (op == -1);
         switch (op) {
             case 1:
-                if (is_genesis) {
-                    printf("Enter the value of genesis: ");
+                if (is_root) {
+                    printf("Enter the value of root: ");
                     do {
                         scanf("%s", u1);
                         u = RInput(u1);
@@ -224,18 +224,18 @@ int main(void) {
                     printf("Incorrect data\n");
                     continue;
                 }
-                if (is_genesis) {
-                    is_genesis = false;
-                    genesis_node = create_genesis_node(u);
+                if (is_root) {
+                    is_root = false;
+                    root_node = CreateRoot(u);
                 } else {
-                    TNode *u_address = FindNode(genesis_node, u);
+                    TNode *u_address = FindNode(root_node, u);
                     if (u_address == NULL) {
                         printf("There is no such vertex in the tree\n");
                         continue;
                     }
-                    TNode *v_address = FindNode(genesis_node, v);
+                    TNode *v_address = FindNode(root_node, v);
                     if (v_address == NULL) {
-                        create_node(u_address, v);
+                        CreateNode(u_address, v);
 
                     } else {
                         printf("There is such vertex in the tree already\n");
@@ -245,23 +245,23 @@ int main(void) {
             case 2:
                 printf("Deleting node: ");
                 scanf("%d", &u);
-                TNode* vert = FindNode(genesis_node, u);
+                TNode* vert = FindNode(root_node, u);
                 if (vert == NULL)
                     printf("Incorrect data\n");
                 else
                     DelNode(vert);
                 break;
             case 3:
-                if (genesis_node != NULL) {
+                if (root_node != NULL) {
                     printf("\n");
-                    TPrint(genesis_node, 0, 0);
+                    TPrint(root_node, 0, 0);
                     printf("\n");
                 }
                 else
                     printf("The tree is empty\n");
                 break;
             case 4:
-                printf("Depth: %d\n", Detour(genesis_node));
+                printf("Depth: %d\n", Detour(root_node));
                 break;
             case 5:
                 return 0;
